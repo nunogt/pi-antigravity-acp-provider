@@ -142,6 +142,50 @@ describe("ACP session compatibility", () => {
 		expect(sessionModels(state)?.currentModelId).toBe("gemini-a-high");
 	});
 
+	it("preserves model-specific xhigh tiers from legacy availableModels and splits them against model options", () => {
+		const state = decodeSessionState({
+			models: {
+				currentModelId: "gemini-3.8-flash-high",
+				availableModels: [
+					{ modelId: "gemini-4-neon-low", name: "Gemini 4 Neon (Low)" },
+					{ modelId: "gemini-4-neon-medium", name: "Gemini 4 Neon (Medium)" },
+					{ modelId: "gemini-4-neon-high", name: "Gemini 4 Neon (High)" },
+					{ modelId: "gemini-4-neon-xhigh", name: "Gemini 4 Neon (XHigh)" },
+					{ modelId: "gemini-3.8-flash-low", name: "Gemini 3.8 Flash (Low)" },
+					{ modelId: "gemini-3.8-flash-medium", name: "Gemini 3.8 Flash (Medium)" },
+					{ modelId: "gemini-3.8-flash-high", name: "Gemini 3.8 Flash (High)" },
+				],
+			},
+			configOptions: [
+				{
+					id: "model",
+					name: "Model",
+					category: "model",
+					type: "select",
+					currentValue: "gemini-3.8-flash",
+					options: [
+						{ value: "gemini-4-neon", name: "Gemini 4 Neon" },
+						{ value: "gemini-3.8-flash", name: "Gemini 3.8 Flash" },
+					],
+				},
+				{
+					id: "thinking_level",
+					name: "Thinking Level",
+					category: "thought_level",
+					type: "select",
+					currentValue: "high",
+					options: [
+						{ value: "low", name: "Low" },
+						{ value: "medium", name: "Medium" },
+						{ value: "high", name: "High" },
+					],
+				},
+			],
+		});
+		expect(sessionModels(state)?.availableModels.map((m) => m.modelId)).toContain("gemini-4-neon-xhigh");
+		expect(splitSessionModelId(state, "gemini-4-neon-xhigh")).toEqual({ base: "gemini-4-neon", effort: "xhigh" });
+	});
+
 	it("preserves native qualified IDs and gives exact IDs precedence over splitting", () => {
 		const state = splitState();
 		const selector = findSessionSelector(state, "model")!;

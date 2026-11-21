@@ -63,7 +63,9 @@ export function selectorValues(option: SelectOption): SessionConfigSelectOption[
 }
 
 /** Reverse the selector cross-product used by discovery, including unknown
- * thought levels, without misinterpreting an exact native model ID. */
+ * thought levels or model-specific tiers (such as `xhigh` on Neon/Hydrogen that
+ * only appear in `thought_level` after selecting the base model), without
+ * misinterpreting an exact native model ID. */
 export function splitSessionModelId(state: SessionState, modelId: string): { base: string; effort: string } | undefined {
 	const model = findSessionSelector(state, "model");
 	const thought = findSessionSelector(state, "thought_level");
@@ -74,6 +76,10 @@ export function splitSessionModelId(state: SessionState, modelId: string): { bas
 	for (const base of models) {
 		const level = levels.find((option) => `${base.value}-${option.value}` === modelId);
 		if (level) return { base: base.value, effort: level.value };
+	}
+	const known = splitEffortSuffix(modelId);
+	if (known && models.some((option) => option.value === known.base)) {
+		return { base: known.base, effort: known.effort };
 	}
 	return undefined;
 }
@@ -92,8 +98,11 @@ export function sessionModels(state: SessionState): { currentModelId: string; av
 				qualified(selector.currentValue) || !thoughtSelector.currentValue
 					? selector.currentValue
 					: `${selector.currentValue}-${thoughtSelector.currentValue}`;
-			// Live selectors are authoritative; retain legacy labels only for the
-			// same complete, duplicate-free inventory.
+			// Live selectors are authoritative; retain legacy labels only for a
+			// duplicate-free inventory covering every synthesized ID. The legacy list
+			// may additionally carry model-specific tiers (Neon/Hydrogen `xhigh`) that the
+			// initial model's thought_level selector lacks, provided each maps to a live
+			// model selector base.
 			const synthesized = modelOptions.flatMap((modelOpt) =>
 				qualified(modelOpt.value)
 					? [{ modelId: modelOpt.value, name: modelOpt.name }]
@@ -103,13 +112,21 @@ export function sessionModels(state: SessionState): { currentModelId: string; av
 						})),
 			);
 			const synthesizedIds = new Set(synthesized.map((m) => m.modelId));
+			const selectorBases = modelOptions.map((m) => m.value);
+			const mapsToSelectorBase = (id: string) =>
+				selectorBases.some((base) =>
+					(base === id && qualified(id)) ||
+					thoughtOptions.some((t) => `${base}-${t.value}` === id) ||
+					splitEffortSuffix(id)?.base === base,
+				);
 
 			const legacy = state.models?.availableModels;
+			const legacyIds = new Set(legacy?.map((model) => model.modelId));
 			const isLegacyCompatible =
 				legacy !== undefined &&
-				legacy.length === synthesizedIds.size &&
-				new Set(legacy.map((model) => model.modelId)).size === synthesizedIds.size &&
-				legacy.every((m) => synthesizedIds.has(m.modelId));
+				legacyIds.size === legacy.length &&
+				[...synthesizedIds].every((id) => legacyIds.has(id)) &&
+				legacy.every((m) => mapsToSelectorBase(m.modelId));
 
 			return {
 				currentModelId,
