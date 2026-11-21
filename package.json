@@ -10,11 +10,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zacbemis/pi-antigravity-acp-provider.git"
+    "url": "git+https://github.com/nunogt/pi-antigravity-acp-provider.git"
   },
-  "homepage": "https://github.com/zacbemis/pi-antigravity-acp-provider#readme",
+  "homepage": "https://github.com/nunogt/pi-antigravity-acp-provider#readme",
   "bugs": {
-    "url": "https://github.com/zacbemis/pi-antigravity-acp-provider/issues"
+    "url": "https://github.com/nunogt/pi-antigravity-acp-provider/issues"
   },
   "keywords": [
     "pi-package",
