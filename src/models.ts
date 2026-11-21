@@ -12,7 +12,7 @@ const ZERO_COST = { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 } as const;
 type Effort = "low" | "medium" | "high" | "xhigh";
 type Variants = Partial<Record<Effort, string>>;
 
-/** Catalog rates in USD per million tokens. Flash / Argon / Carbon / Pro entries
+/** Catalog rates in USD per million tokens. Flash / Argon / Carbon / Neon / Pro entries
  * match models.dev's Google / Vertex entries (retrieved 2026-11-11); Hydrogen
  * matches Google's published paid-tier pricing from its 2026-11-12 launch (not
  * yet in models.dev). Antigravity bills through a subscription, so these produce
@@ -23,6 +23,7 @@ const FLASH_RATES: Model<typeof API_ID>["cost"] = { input: 0.75, output: 3.75, c
 const ARGON_RATES: Model<typeof API_ID>["cost"] = { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0 };
 const CARBON_RATES: Model<typeof API_ID>["cost"] = { input: 2, output: 10, cacheRead: 0.1, cacheWrite: 0 };
 const HYDROGEN_RATES: Model<typeof API_ID>["cost"] = { input: 1.5, output: 7.5, cacheRead: 0.075, cacheWrite: 0 };
+const NEON_RATES: Model<typeof API_ID>["cost"] = { input: 3, output: 15, cacheRead: 0.15, cacheWrite: 0 };
 const PRO_RATES = {
 	input: 2,
 	output: 12,
@@ -37,6 +38,7 @@ export function costRatesFor(modelId: string): Model<typeof API_ID>["cost"] {
 	const base = splitEffortSuffix(modelId)?.base ?? modelId;
 	if (/^gemini-3\.[678]-flash$/u.test(base)) return FLASH_RATES;
 	if (/^gemini-4-hydrogen$/u.test(base)) return HYDROGEN_RATES;
+	if (/^gemini-4-neon$/u.test(base)) return NEON_RATES;
 	if (/^gemini-4-argon$/u.test(base)) return ARGON_RATES;
 	if (/^gemini-4-carbon$/u.test(base)) return CARBON_RATES;
 	if (/^(gemini-3\.1-pro|gemini-pro-agent)$/u.test(base)) return PRO_RATES;
@@ -49,6 +51,12 @@ export const FALLBACK_MODELS: readonly Model<typeof API_ID>[] = [
 		low: "gemini-3.8-flash-low",
 		medium: "gemini-3.8-flash-medium",
 		high: "gemini-3.8-flash-high",
+	}),
+	reasoningModel("gemini-4-neon", "Gemini 4 Neon", {
+		low: "gemini-4-neon-low",
+		medium: "gemini-4-neon-medium",
+		high: "gemini-4-neon-high",
+		xhigh: "gemini-4-neon-xhigh",
 	}),
 	reasoningModel("gemini-4-hydrogen", "Gemini 4 Hydrogen", {
 		low: "gemini-4-hydrogen-low",
@@ -169,7 +177,7 @@ export type ModelEffort = "low" | "medium" | "high" | "xhigh";
 /** Antigravity advertises effort-qualified ids (`gemini-3.8-flash-high`) while the
  * server's `model` config option takes only the base id and keeps the tier on a
  * selector of its own, so a qualified id has to be split before it is sent.
- * Gemini 4 Hydrogen adds an `xhigh` tier. */
+ * Gemini 4 Neon and Hydrogen add an `xhigh` tier. */
 export function splitEffortSuffix(modelId: string): { base: string; effort: ModelEffort } | undefined {
 	const match = /^(.*)-(low|medium|high|xhigh)$/u.exec(modelId);
 	if (!match?.[1]) return undefined;
