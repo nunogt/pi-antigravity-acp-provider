@@ -24,6 +24,22 @@ describe("projectModels", () => {
 		expect(carbon?.cost.input).toBe(2);
 	});
 
+	it("lists Neon offline with its xhigh tier and reference rates", () => {
+		const neon = FALLBACK_MODELS.find((model) => model.id === "gemini-4-neon");
+		expect(neon).toMatchObject({
+			name: "Gemini 4 Neon",
+			reasoning: true,
+			thinkingLevelMap: {
+				low: "gemini-4-neon-low",
+				medium: "gemini-4-neon-medium",
+				high: "gemini-4-neon-high",
+				xhigh: "gemini-4-neon-xhigh",
+			},
+		});
+		expect(neon?.cost).toMatchObject({ input: 3, output: 15, cacheRead: 0.15 });
+		expect(resolveAcpModelId(neon!, "xhigh")).toBe("gemini-4-neon-xhigh");
+	});
+
 	it.each(["low", "medium", "high"])("splits a known %s suffix without truncating the base", (effort) => {
 		expect(splitEffortSuffix(`gemini-hyphenated-base-${effort}`)).toEqual({ base: "gemini-hyphenated-base", effort });
 	});
